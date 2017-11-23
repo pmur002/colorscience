@@ -2512,23 +2512,27 @@ colnames(XYZ)<-c('X','Y','Z')
 XYZ
 }
 
-XYZ2xyY<-function(XYZmatrix,illuminant='D65',observer=2,RefWhite=get("XYZperfectreflectingdiffuser", envir = environment()))
-{# Based on: Bruce Justin Lindbloom 2013 http:#www.brucelindbloom.com/index.html?ColorCalculator.html
-if (!is.matrix(XYZmatrix)) XYZmatrix<-matrix(XYZmatrix,ncol=3,byrow=TRUE)
-Den <- rowSums(XYZmatrix)
-DenG0<-which(Den > 0.0)
-xyYmatrix<-XYZmatrix
-xyYmatrix[DenG0,1:2]<- XYZmatrix[DenG0,1:2]/Den
-xyYmatrix[DenG0,3]<- XYZmatrix[DenG0,2]
-R<-RefWhite[which(RefWhite[["Illuminant"]]==illuminant ),]
-Rx<-unlist(R[paste('X',observer,sep='')])
-Ry<-unlist(R[paste('Y',observer,sep='')])
-Rz<-unlist(R[paste('Z',observer,sep='')])
-x <- Rx / (Rx + Ry + Rz)
-y <- Ry / (Rx + Ry + Rz)
-xyYmatrix[-DenG0,1]<-x
-xyYmatrix[-DenG0,2]<-y
-xyYmatrix
+XYZ2xyY <- function(XYZmatrix, illuminant='D65', observer=2,
+                    RefWhite=get("XYZperfectreflectingdiffuser",
+                                 envir = environment())) {
+    ## Based on:
+    ## Bruce Justin Lindbloom 2013 http:#www.brucelindbloom.com/index.html?ColorCalculator.html
+    if (!is.matrix(XYZmatrix))
+        XYZmatrix <- matrix(XYZmatrix,ncol=3,byrow=TRUE)
+    Den <- rowSums(XYZmatrix)
+    DenG0 <- which(Den > 0.0)
+    xyYmatrix <- XYZmatrix
+    xyYmatrix[DenG0, 1:2] <- XYZmatrix[DenG0, 1:2]/Den[DenG0]
+    xyYmatrix[DenG0, 3] <- XYZmatrix[DenG0, 2]
+    R <- RefWhite[which(RefWhite[["Illuminant"]] == illuminant),]
+    Rx <- unlist(R[paste('X', observer, sep='')])
+    Ry <- unlist(R[paste('Y', observer, sep='')])
+    Rz <- unlist(R[paste('Z', observer, sep='')])
+    x <- Rx / (Rx + Ry + Rz)
+    y <- Ry / (Rx + Ry + Rz)
+    xyYmatrix[-DenG0, 1] <- x
+    xyYmatrix[-DenG0, 2] <- y
+    xyYmatrix
 }
 
 Lab2XYZ<-function(Labmatrix,illuminant='D65',observer=2,RefWhite=get("XYZperfectreflectingdiffuser", envir = environment()))
