@@ -103,85 +103,45 @@ MunsellSpecToHVC <- function( MunsellSpecString )
 #       get("CentralsISCCNBS", envir = environment())
 #
 #   author:  Glenn Davis
-ColorBlockFromMunsell  <-  function( HVC )
-    {    
-    if( ! is.numeric(HVC) )
-        {
-        #   mess = "ColorBlockFromMunsell().  HVC is not numeric.\n"
-        #   cat( mess )
-        return(NULL)
-        }
-
-    if( is.matrix(HVC) )
-        {
-        if( ncol(HVC) != 3 )
-            {
-            #   mess = "ColorBlockFromMunsell().  HVC does not have 3 columns.\n"
-            #   cat( mess )
-            return(NULL)
-            }        
-        
-        colnames(HVC)  = c( "H", "V", "C" )        
-        class(HVC)     = "model.matrix" 
-        
-        out = data.frame( HVC=HVC, Number=as.integer(NA), Name=as.character(NA), stringsAsFactors=FALSE )
-        
-        for( i in 1:nrow(out) )
-            {
-            result  = ColorBlockFromMunsell( HVC[i, ] )
-        
-            out$Number[i]   = result$Number
-            out$Name[i]     = result$Name
-            }
-        
-        return(out)
-        }
-    
-    if( length(HVC) != 3 )
-        {
-        #   mess = "ColorBlockFromMunsell().  length of HVC is not 3.\n"
-        #   cat( mess )
-        return(NULL)
-        }        
-        
-
-    if( is.null( names(HVC) ) )
-        names(HVC) = c( "Hue", "Value", "Chroma" )
-    
-    out = list( HVC=HVC, Number=as.integer(NA), Name=as.character(NA) )
-            
-    vmax    = 10            
-    valid   = all( is.finite(HVC) )  &&  (0 <= HVC[2])  &&  (HVC[2] <= vmax)  &&  (0 <= HVC[3])
-    
-    if( ! valid )   return( out )
-    
-    #   translate hue to the interval [1,101)   (101 is not included)
-    HVC[1] = ((HVC[1] - 1 ) %% 100) + 1
-        
-    if( HVC[2] == vmax )   HVC[2] = vmax - 1.e-6     # because upper comparison below is strict
-    
-    #   do 6-way comparison.  
-    #   Note upper comparisons are strict, and lower comparisons are not strict.
-    #   So a point on a boundary is in only 1 block.
-    mask.H  = get("SystemISCCNBS", envir = environment())$Hmin <= HVC[1]  &  HVC[1] < get("SystemISCCNBS", envir = environment())$Hmax
-    mask.V  = get("SystemISCCNBS", envir = environment())$Vmin <= HVC[2]  &  HVC[2] < get("SystemISCCNBS", envir = environment())$Vmax
-    mask.C  = get("SystemISCCNBS", envir = environment())$Cmin <= HVC[3]  &  HVC[3] < get("SystemISCCNBS", envir = environment())$Cmax
-        
-    theRow  = get("SystemISCCNBS", envir = environment())[ mask.H & mask.V & mask.C, ]
-    
-    if( nrow(theRow) != 1 )
-        {
-        #   mess = sprintf( "Expected exactly 1 match, but found %d\n", nrow(theRow) )
-        #   cat( mess )
-        return( out )
-        }
-        
-    out$Number  = theRow$Number
-    
-    out$Name    = get("CentralsISCCNBS", envir = environment())$Name[ out$Number ] #
-    
-    return( out )
+ColorBlockFromMunsell <- function (HVC) 
+{
+    if (!is.numeric(HVC)) {
+        stop("HVC must be numeric")
     }
+    if (is.matrix(HVC)) {
+        if (ncol(HVC) != 3) {
+            stop("HVC must have 3 columns")
+        }
+        result <- character(nrow(HVC))
+        finite <- apply(HVC, 1, function(x) all(is.finite(x)))
+        result[!finite] <- NA
+        
+        HVC <- HVC[finite, , drop=FALSE]
+        colnames(HVC) = c("H", "V", "C")
+        valid = all(0 <= HVC[,2] & HVC[,2] <= vmax & 0 <= HVC[,3])
+        if (!valid) 
+            stop("Invalid value(s) in HVC")
+        ## Ensure Hues and Values are within range
+        HVC[,1] = ((HVC[,1] - 1)%%100) + 1
+        vmax = 10
+        HVC[,2][HVC[,2] == vmax] <- vmax - 1e-06
+
+        ## Each outer() is large so do NOT keep several at once
+        mask = outer(HVC[,1], SystemISCCNBS$Hmin, ">=")
+        mask = mask & outer(HVC[,1], SystemISCCNBS$Hmax, "<")
+        mask = mask & outer(HVC[,2], SystemISCCNBS$Vmin, ">=")
+        mask = mask & outer(HVC[,2], SystemISCCNBS$Vmax, "<")
+        mask = mask & outer(HVC[,3], SystemISCCNBS$Cmin, ">=")
+        mask = mask & outer(HVC[,3], SystemISCCNBS$Cmax, "<")
+        theRows <- apply(mask, 1, which)
+
+        result[finite] <- CentralsISCCNBS$Name[SystemISCCNBS$Number[theRows]]
+        
+        return(result)
+    } else {
+        stop("HVC must be a matrix")
+    }
+}
 
 #
 #   CheckColorLookup()
