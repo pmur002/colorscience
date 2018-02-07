@@ -102,7 +102,8 @@ MunsellSpecToHVC <- function( MunsellSpecString )
 #       get("SystemISCCNBS", envir = environment())
 #       get("CentralsISCCNBS", envir = environment())
 #
-#   author:  Glenn Davis
+#   author:  Glenn Davis (original version)
+#            Paul Murrell (vectorised version)
 ColorBlockFromMunsell <- function (HVC) 
 {
     if (!is.numeric(HVC)) {
@@ -112,19 +113,19 @@ ColorBlockFromMunsell <- function (HVC)
         if (ncol(HVC) != 3) {
             stop("HVC must have 3 columns")
         }
-        result <- character(nrow(HVC))
-        finite <- apply(HVC, 1, function(x) all(is.finite(x)))
-        result[!finite] <- NA
+        result = character(nrow(HVC))
+        finite = apply(HVC, 1, function(x) all(is.finite(x)))
+        result[!finite] = NA
         
-        HVC <- HVC[finite, , drop=FALSE]
+        HVC = HVC[finite, , drop=FALSE]
         colnames(HVC) = c("H", "V", "C")
+        ## Ensure Hues and Values are within range
+        vmax = 10
         valid = all(0 <= HVC[,2] & HVC[,2] <= vmax & 0 <= HVC[,3])
         if (!valid) 
             stop("Invalid value(s) in HVC")
-        ## Ensure Hues and Values are within range
         HVC[,1] = ((HVC[,1] - 1)%%100) + 1
-        vmax = 10
-        HVC[,2][HVC[,2] == vmax] <- vmax - 1e-06
+        HVC[,2][HVC[,2] == vmax] = vmax - 1e-06
 
         ## Each outer() is large so do NOT keep several at once
         mask = outer(HVC[,1], SystemISCCNBS$Hmin, ">=")
@@ -133,9 +134,9 @@ ColorBlockFromMunsell <- function (HVC)
         mask = mask & outer(HVC[,2], SystemISCCNBS$Vmax, "<")
         mask = mask & outer(HVC[,3], SystemISCCNBS$Cmin, ">=")
         mask = mask & outer(HVC[,3], SystemISCCNBS$Cmax, "<")
-        theRows <- apply(mask, 1, which)
+        theRows = apply(mask, 1, which)
 
-        result[finite] <- CentralsISCCNBS$Name[SystemISCCNBS$Number[theRows]]
+        result[finite] = CentralsISCCNBS$Name[SystemISCCNBS$Number[theRows]]
         
         return(result)
     } else {
